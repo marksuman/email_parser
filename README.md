@@ -1,8 +1,8 @@
 usage: email_parser [-h] [-i INPUT_PATH] [-o OUTPUT_PATH]
                     [--input_extensions= INPUT_EXTENSIONS]
 
-Parses raw email messages for "Date Sent", "Sender", "Subject" and outputs
-them to a CSV file.
+Parses MSG formatted email messages for "Date Sent", "Sender", "Subject" and
+outputs them to a CSV file.
 
 optional arguments:
   -h, --help            show this help message and exit

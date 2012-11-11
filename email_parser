@@ -4,21 +4,25 @@ import os
 import re
 import sys
 import csv
-import copy
+import errno
 import email
 from argparse import ArgumentParser
 
 class EmailParser(object):
+    """Parses MSG files from the provided path, either a directory or single file
+    and outputs the specified fields (self.output_fields) to a CSV file.
+    """
 
     # Defaults
-    INPUT_PATH = os.getcwd() + '/data/'
-    OUTPUT_PATH = os.getcwd() + '/output.csv'
+    OUTPUT_PATH = os.path.join(os.getcwd(), 'output.csv')
+    INPUT_PATH = os.path.join(os.getcwd(), 'data')
     INPUT_EXTENSIONS = [ 'msg' ]
 
+    # Output field names, input field names ordered by preference
+    output_fields = [ 'Date Sent', 'Sender', 'Subject' ]
     input_fields = { 'Date Sent': [ 'Date' ],
                      'Sender': [ 'From', 'Reply-To', 'Return-Path' ],
                      'Subject': [ 'Subject' ] }
-    output_fields = [ 'Date Sent', 'Sender', 'Subject' ]
 
     def __init__(self, input_path=None, output_path=None, input_extensions=None):
 
@@ -28,6 +32,10 @@ class EmailParser(object):
         self.file_queue = []
 
     def output_fields_to_csv(self):
+        """Determines if our input path is a directory or single file, loads
+        files from our input path into the file queue, opens a csv writer and
+        writes results as they are yielded.
+        """
 
         if os.path.isdir(self.input_path):
             self.queue_files_from_input_directory()
@@ -52,6 +60,10 @@ class EmailParser(object):
             sys.exit(1)
             
     def get_input_fields(self):
+        """Loops through our file queue, parsing MSG files for the specified fields.
+        Checks by case for field names, then results to case insensitive search if not found,
+        prints errors to stderr.
+        """
 
         if not self.file_queue:
             print >> sys.stderr, 'No files were queued to process.'
@@ -72,7 +84,7 @@ class EmailParser(object):
                     for output_field in self.output_fields:
                         for input_field in self.input_fields[output_field]:
 
-                            # For out case insensitive search, used as a last resort
+                            # For our case insensitive search, used as a last resort
                             i_input_field = input_field.lower()
 
                             if input_field in input_msg:
@@ -96,6 +108,8 @@ class EmailParser(object):
             print >> sys.stderr, sys.exc_info()[0]
 
     def queue_files_from_input_directory(self):
+        """ Queues list of files from directory (non-recursive) with the correct extension.
+        """
 
         for filename in os.listdir(self.input_path):
 
@@ -105,12 +119,12 @@ class EmailParser(object):
                 # Not an acceptable input file, skip
                 continue
 
-            full_path = self.input_path+'/'+filename
+            full_path = os.path.join(self.input_path, filename)
             self.file_queue.append(full_path)
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Parses raw email messages for "Date Sent", "Sender", '\
+    parser = ArgumentParser(description='Parses MSG formatted email messages for "Date Sent", "Sender", '\
                                         +'"Subject" and outputs them to a CSV file.')
     parser.add_argument('-i', '--input_path=',
                         help='Email file or directory with email files in it.',
@@ -133,8 +147,5 @@ if __name__ == '__main__':
     if args.input_extensions:
         args.input_extensions = re.sub('[\ \.]', '', args.input_extensions).split(',')
 
-    email_parser = EmailParser(output_path=args.output_path,
-                               input_path=args.input_path,
-                               input_extensions=args.input_extensions)
-
+    email_parser = EmailParser(**vars(args))
     email_parser.output_fields_to_csv()
