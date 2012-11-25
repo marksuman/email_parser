@@ -115,9 +115,8 @@ class EmailParser(object):
 
             full_path = os.path.join(self.input_path, filename)
 
-            # Skip directories and extension-less files
             if not os.path.isfile(full_path) or not '.' in filename:
-                print 'Skipping %s' % filename
+                # Skip directories and extension-less files
                 continue
 
             ext_idx = filename.rfind('.', 0, len(filename))
